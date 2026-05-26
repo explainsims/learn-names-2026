@@ -287,6 +287,8 @@ export default function App() {
                   photoUrl={currentBlobUrl}
                   isLoading={isLoadingPhoto}
                   stats={deckStats[currentPhoto.id] || { correct: 0, incorrect: 0, mastered: false }}
+                  activeCount={activeDeck.length}
+                  masteredCount={photos.length - activeDeck.length}
                   onResult={handleResult}
                   onNext={handleNextStudent}
                 />

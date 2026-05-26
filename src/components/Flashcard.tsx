@@ -13,11 +13,13 @@ interface FlashcardProps {
   photoUrl: string | null;
   isLoading: boolean;
   stats: StudentStats;
+  activeCount: number;
+  masteredCount: number;
   onResult: (type: 'correct' | 'incorrect' | 'mastered') => void;
   onNext: () => void;
 }
 
-export default function Flashcard({ name, photoUrl, isLoading, stats, onResult, onNext }: FlashcardProps) {
+export default function Flashcard({ name, photoUrl, isLoading, stats, activeCount, masteredCount, onResult, onNext }: FlashcardProps) {
   const [isFlipped, setIsFlipped] = useState(false);
 
   // Auto flip to front when a new student is shown
@@ -49,10 +51,18 @@ export default function Flashcard({ name, photoUrl, isLoading, stats, onResult, 
         style={{ transformStyle: 'preserve-3d' }}
       >
         {/* Front of Card: Photo */}
-        <div 
+        <div
           className="absolute w-full h-full backface-hidden bg-white border-4 border-[#2D3436] rounded-[32px] shadow-[12px_12px_0px_#4ECDC4] flex flex-col p-4 transition-transform group-hover:scale-[1.02] group-active:scale-[0.98]"
           style={{ backfaceVisibility: 'hidden' }}
         >
+          {/* Progress counters: remaining (orange) vs mastered (green) */}
+          <div className="absolute top-3 left-3 z-20 w-10 h-10 rounded-full bg-[#FF8C42] border-2 border-[#2D3436] flex items-center justify-center text-white font-black text-base leading-none shadow-[2px_2px_0px_#2D3436] pointer-events-none">
+            {activeCount}
+          </div>
+          <div className="absolute top-3 right-3 z-20 w-10 h-10 rounded-full bg-[#4ECDC4] border-2 border-[#2D3436] flex items-center justify-center text-white font-black text-base leading-none shadow-[2px_2px_0px_#2D3436] pointer-events-none">
+            {masteredCount}
+          </div>
+
           {isLoading ? (
             <div className="w-full h-full bg-[#FFE66D] border-2 border-[#2D3436] rounded-[24px] flex flex-col items-center justify-center text-[#2D3436] space-y-4">
               <RefreshCw className="w-10 h-10 animate-spin" />
