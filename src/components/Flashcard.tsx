@@ -42,7 +42,7 @@ export default function Flashcard({ name, photoUrl, isLoading, stats, activeCoun
   };
 
   return (
-    <div className="relative h-[95%] max-w-full mx-auto cursor-pointer group" onClick={handleFlip} style={{ perspective: '1000px', aspectRatio: '3 / 4' }}>
+    <div className="relative h-[90%] max-w-full mx-auto cursor-pointer group" onClick={handleFlip} style={{ perspective: '1000px', aspectRatio: '3 / 4' }}>
       <motion.div
         className="w-full h-full relative"
         initial={false}
