@@ -221,7 +221,7 @@ export default function App() {
   }
 
   return (
-    <div className="h-screen bg-[#FFF9F0] relative overflow-hidden flex flex-col font-sans text-[#2D3436]">
+    <div className="h-screen bg-[#FFF9F0] relative overflow-hidden flex flex-col font-sans text-[#2D3436] pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
       {/* Abstract Backgrounds */}
       <div className="absolute top-[-50px] left-[-50px] w-80 h-80 bg-[#FFE66D] rounded-full opacity-40 blur-3xl pointer-events-none"></div>
       <div className="absolute bottom-[-100px] right-[-100px] w-96 h-96 bg-[#4ECDC4] rounded-full opacity-20 blur-3xl pointer-events-none"></div>
@@ -342,7 +342,7 @@ export default function App() {
           <button disabled className="flex-1 h-12 rounded-xl border-4 border-[#2D3436] font-black uppercase text-[10px] sm:text-xs tracking-wider bg-[#FF6B6B] text-[#2D3436] opacity-50 cursor-not-allowed">
             Grade 11
           </button>
-          <button className="flex-1 h-12 rounded-xl border-4 border-[#2D3436] font-black uppercase text-[10px] sm:text-xs tracking-wider bg-[#A8E6CF] text-[#2D3436] shadow-[3px_3px_0px_#2D3436] cursor-default">
+          <button className="flex-1 h-12 rounded-xl border-4 border-[#2D3436] font-black uppercase text-[10px] sm:text-xs tracking-wider bg-[#A8E6CF] text-[#2D3436] cursor-default">
             Grade 12
           </button>
         </footer>

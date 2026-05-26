@@ -72,7 +72,7 @@ export default function SettingsPanel({ activeCount, masteredCount, onResetGrade
       </div>
 
       <hr className="border-t-2 border-[#2D3436] opacity-30 mb-4" />
-      <h2 className="font-black uppercase text-base tracking-tight mb-3 px-1">Reset Skipped Students</h2>
+      <h2 className="font-black uppercase text-base tracking-tight mb-3 text-center">Reset Skipped Students</h2>
 
       <div className="grid grid-cols-2 gap-3">
         {GRADES.map((grade) => (
