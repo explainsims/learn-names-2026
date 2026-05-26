@@ -7,6 +7,10 @@ const auth = getAuth(app);
 
 const provider = new GoogleAuthProvider();
 provider.addScope('https://www.googleapis.com/auth/drive.readonly');
+// Always show the account chooser so users can pick the Google account
+// that has access to the shared Drive folder, rather than auto-signing
+// in to whichever account the browser remembers.
+provider.setCustomParameters({ prompt: 'select_account' });
 
 let isSigningIn = false;
 let cachedAccessToken: string | null = null;

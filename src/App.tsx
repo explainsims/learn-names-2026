@@ -170,7 +170,7 @@ export default function App() {
           </div>
           <h1 className="text-3xl font-black text-[#2D3436] uppercase italic text-center mb-2 tracking-tight">Student Names</h1>
           <p className="text-[#2D3436] text-center text-sm font-medium mb-8 opacity-80">
-            Learn the names of your students with flashcards. Requires Google Drive access to load photos.
+            Learn the names of your students with flashcards. Sign in with the Google account that has access to the shared student-photos Drive folder.
           </p>
 
           {error && (
