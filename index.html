@@ -5,30 +5,76 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>Learn Names</title>
 
-    <!-- PWA / installability -->
-    <link rel="manifest" href="manifest.webmanifest" />
+    <!-- PWA / installability. Static link hrefs are root-absolute so
+         the Cloudflare worker's HTMLRewriter prepends the /<app>/
+         prefix; the manifest itself is generated at runtime from
+         window.location so its start_url, scope, and icon paths
+         always point back into this app (and survive the user
+         visiting the prefix with no trailing slash). -->
     <meta name="theme-color" content="#FF6B6B" />
-    <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png" />
-    <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="Learn Names" />
     <meta name="mobile-web-app-capable" content="yes" />
 
     <script src="/runtime-config.js"></script>
+    <script>
+      (function () {
+        // Figure out the absolute path prefix this app lives under.
+        // Cloud Run direct: "/". Behind explainsims.com Cloudflare
+        // worker: "/<app>/" (computed from the first URL segment).
+        var basePath = '/';
+        if (location.hostname.indexOf('explainsims.com') !== -1) {
+          var seg = location.pathname.split('/').filter(Boolean)[0] || '';
+          basePath = seg ? '/' + seg + '/' : '/';
+        }
+        window.__APP_BASE = basePath;
+
+        // Build the manifest as a Blob so its URL has no chance of
+        // resolving against the wrong base (e.g. the no-trailing-slash
+        // case explainsims.com/learn-names-2026, where relative paths
+        // would walk back to the explainsims.com root and the install
+        // would pin to the wrong origin).
+        var manifest = {
+          name: 'Learn Names',
+          short_name: 'Learn Names',
+          description: "Flashcards for learning your students' names.",
+          start_url: basePath,
+          scope: basePath,
+          id: basePath,
+          display: 'standalone',
+          orientation: 'portrait',
+          background_color: '#FFF9F0',
+          theme_color: '#FF6B6B',
+          icons: [
+            { src: basePath + 'icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
+            { src: basePath + 'icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
+            { src: basePath + 'icon-maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' }
+          ]
+        };
+        var blob = new Blob([JSON.stringify(manifest)], { type: 'application/manifest+json' });
+        var link = document.createElement('link');
+        link.rel = 'manifest';
+        link.href = URL.createObjectURL(blob);
+        document.head.appendChild(link);
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
     <script>
-      // Relative path so this resolves correctly whether the app is served
-      // at the Cloud Run root or under the explainsims.com/<app>/ subpath.
-      // Skipped on localhost so a stale dev cache never masks code changes.
+      // SW registration uses window.__APP_BASE (set above) so the
+      // service worker URL and scope are absolute, not relative.
+      // Skipped on localhost so a stale dev cache never masks code edits.
       var host = location.hostname;
       var isLocal = host === 'localhost' || host === '127.0.0.1' || host === '0.0.0.0';
       if ('serviceWorker' in navigator && !isLocal) {
         window.addEventListener('load', function () {
-          navigator.serviceWorker.register('sw.js').catch(function (err) {
+          var base = window.__APP_BASE || '/';
+          navigator.serviceWorker.register(base + 'sw.js', { scope: base }).catch(function (err) {
             console.warn('Service worker registration failed:', err);
           });
         });
@@ -36,4 +82,3 @@
     </script>
   </body>
 </html>
-
