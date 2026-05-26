@@ -3,7 +3,8 @@ import { User } from 'firebase/auth';
 import { initAuth, googleSignIn, logout } from './auth';
 import { fetchStudentPhotos, fetchImageBlobUrl, StudentPhoto } from './drive';
 import Flashcard from './components/Flashcard';
-import { LogOut, UserSquare, Sparkles } from 'lucide-react';
+import SettingsPanel from './components/SettingsPanel';
+import { LogOut, UserSquare, Sparkles, Settings } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 const FOLDER_ID = '1Xa7yM7aKS3ql9oUt6RVAFypO-q9LmhAn';
@@ -31,6 +32,16 @@ export default function App() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [currentBlobUrl, setCurrentBlobUrl] = useState<string | null>(null);
   const [isLoadingPhoto, setIsLoadingPhoto] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [selectedGrade, setSelectedGrade] = useState('g12');
+
+  const resetSkipped = () => {
+    const updated = Object.fromEntries(
+      Object.entries(deckStats).map(([id, s]) => [id, { ...s, mastered: false }])
+    );
+    setDeckStats(updated);
+    localStorage.setItem('student_stats', JSON.stringify(updated));
+  };
 
   const activeDeck = useMemo(() => {
     return photos.filter(p => !deckStats[p.id]?.mastered);
@@ -219,18 +230,34 @@ export default function App() {
           <span className="font-black text-[#2D3436] uppercase italic tracking-tight text-xl">Learn Names</span>
         </div>
         
-        <button 
-          onClick={handleLogout}
-          className="text-[#2D3436] px-4 py-2 border-2 border-[#2D3436] shadow-[2px_2px_0px_#2D3436] bg-white hover:bg-[#F7F7F7] active:shadow-none active:translate-x-0.5 active:translate-y-0.5 rounded-xl transition-all flex items-center gap-2 text-sm font-bold uppercase"
-        >
-          <LogOut className="w-4 h-4" />
-          <span className="hidden sm:inline">Sign Out</span>
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowSettings((s) => !s)}
+            aria-label={showSettings ? 'Close settings' : 'Open settings'}
+            aria-pressed={showSettings}
+            className={`text-[#2D3436] w-10 h-10 border-2 border-[#2D3436] shadow-[2px_2px_0px_#2D3436] active:shadow-none active:translate-x-0.5 active:translate-y-0.5 rounded-xl transition-all flex items-center justify-center ${showSettings ? 'bg-[#FFE66D]' : 'bg-white hover:bg-[#F7F7F7]'}`}
+          >
+            <Settings className="w-4 h-4" />
+          </button>
+          <button
+            onClick={handleLogout}
+            className="text-[#2D3436] px-4 py-2 border-2 border-[#2D3436] shadow-[2px_2px_0px_#2D3436] bg-white hover:bg-[#F7F7F7] active:shadow-none active:translate-x-0.5 active:translate-y-0.5 rounded-xl transition-all flex items-center gap-2 text-sm font-bold uppercase"
+          >
+            <LogOut className="w-4 h-4" />
+            <span className="hidden sm:inline">Sign Out</span>
+          </button>
+        </div>
       </header>
 
       {/* Main Area */}
       <main id="app-main" className="flex-1 min-h-0 flex flex-col items-center justify-center py-3 px-4 w-full max-w-lg mx-auto z-10 relative">
-        {isLoadingDeck ? (
+        {showSettings ? (
+          <SettingsPanel
+            selectedGradeId={selectedGrade}
+            onSelectGrade={setSelectedGrade}
+            onResetSkipped={resetSkipped}
+          />
+        ) : isLoadingDeck ? (
           <div id="loading-deck-state" className="flex flex-col items-center space-y-4 text-[#2D3436]">
             <div className="w-12 h-12 border-4 border-[#F0F0F0] border-t-[#4ECDC4] rounded-full animate-spin"></div>
             <p className="font-bold animate-pulse uppercase tracking-wide text-sm">Scanning Drive folder...</p>
@@ -280,7 +307,7 @@ export default function App() {
                 animate={{ opacity: 1, scale: 1, x: 0 }}
                 exit={{ opacity: 0, scale: 0.9, x: -50 }}
                 transition={{ duration: 0.3, ease: 'easeOut' }}
-                className="flex-1 min-h-0 w-full flex items-center justify-center mb-3"
+                className="flex-1 min-h-0 w-full flex items-center justify-center"
               >
                 <Flashcard
                   name={currentPhoto.name}
@@ -294,13 +321,6 @@ export default function App() {
                 />
               </motion.div>
             </AnimatePresence>
-
-            <button
-              onClick={handleNextStudent}
-              className="flex-shrink-0 mx-auto bg-white border-4 border-[#2D3436] shadow-[6px_6px_0px_#2D3436] active:shadow-none active:translate-x-1.5 active:translate-y-1.5 hover:bg-[#F7F7F7] px-8 py-3 rounded-2xl text-sm font-black uppercase tracking-wider transition-all"
-            >
-              Next Student
-            </button>
           </div>
         )}
       </main>
@@ -317,7 +337,7 @@ export default function App() {
           <button disabled className="flex-1 h-12 rounded-xl border-4 border-[#2D3436] font-black uppercase text-[10px] sm:text-xs tracking-wider bg-[#FF6B6B] text-[#2D3436] opacity-50 cursor-not-allowed">
             Grade 11
           </button>
-          <button disabled className="flex-1 h-12 rounded-xl border-4 border-[#2D3436] font-black uppercase text-[10px] sm:text-xs tracking-wider bg-[#A8E6CF] text-[#2D3436] opacity-50 cursor-not-allowed">
+          <button className="flex-1 h-12 rounded-xl border-4 border-[#2D3436] font-black uppercase text-[10px] sm:text-xs tracking-wider bg-[#A8E6CF] text-[#2D3436] shadow-[3px_3px_0px_#2D3436] cursor-default">
             Grade 12
           </button>
         </footer>
