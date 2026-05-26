@@ -12,6 +12,19 @@ export interface StudentPhoto {
 const toTitleCase = (s: string): string =>
   s.toLowerCase().replace(/(^|[\s\-(])([a-z])/g, (_, sep, ch) => sep + ch.toUpperCase());
 
+// School filenames are "SURNAME, given names" — keep the surname as
+// uppercase (it can contain spaces, hyphens, or apostrophes) and
+// title-case everything after the first comma. Filenames with no
+// comma fall back to plain title case.
+const formatName = (s: string): string => {
+  const commaIdx = s.indexOf(',');
+  if (commaIdx === -1) return toTitleCase(s);
+  const surname = s.slice(0, commaIdx).trim().toUpperCase();
+  const rest = s.slice(commaIdx + 1).trim();
+  if (!rest) return surname;
+  return `${surname}, ${toTitleCase(rest)}`;
+};
+
 export const fetchStudentPhotos = async (folderId: string): Promise<StudentPhoto[]> => {
   const token = await getAccessToken();
   if (!token) throw new Error('No access token available');
@@ -48,7 +61,7 @@ export const fetchStudentPhotos = async (folderId: string): Promise<StudentPhoto
 
     return {
       id: f.id,
-      name: toTitleCase(f.name.replace(/\.[^/.]+$/, "")),
+      name: formatName(f.name.replace(/\.[^/.]+$/, "")),
       url: photoUrl, // We will use this directly!
     };
   });
