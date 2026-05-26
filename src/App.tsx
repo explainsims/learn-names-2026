@@ -205,13 +205,13 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-[#FFF9F0] relative overflow-hidden flex flex-col font-sans text-[#2D3436]">
+    <div className="h-screen bg-[#FFF9F0] relative overflow-hidden flex flex-col font-sans text-[#2D3436]">
       {/* Abstract Backgrounds */}
       <div className="absolute top-[-50px] left-[-50px] w-80 h-80 bg-[#FFE66D] rounded-full opacity-40 blur-3xl pointer-events-none"></div>
       <div className="absolute bottom-[-100px] right-[-100px] w-96 h-96 bg-[#4ECDC4] rounded-full opacity-20 blur-3xl pointer-events-none"></div>
 
       {/* Header */}
-      <header className="fixed top-0 left-0 right-0 h-20 bg-white border-b-4 border-[#2D3436] z-10 px-6 flex items-center justify-between shadow-[0_4px_0px_rgba(45,52,54,0.1)]">
+      <header className="flex-shrink-0 h-20 bg-white border-b-4 border-[#2D3436] z-10 px-6 flex items-center justify-between shadow-[0_4px_0px_rgba(45,52,54,0.1)] relative">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 bg-[#FF6B6B] border-2 border-[#2D3436] rounded-full flex items-center justify-center text-white shadow-[2px_2px_0px_#2D3436]">
             <UserSquare className="w-6 h-6" />
@@ -229,7 +229,7 @@ export default function App() {
       </header>
 
       {/* Main Area */}
-      <main id="app-main" className="flex-1 min-h-0 flex flex-col items-center justify-center pt-24 pb-28 px-4 w-full max-w-lg mx-auto z-10 relative">
+      <main id="app-main" className="flex-1 min-h-0 flex flex-col items-center justify-center py-3 px-4 w-full max-w-lg mx-auto z-10 relative">
         {isLoadingDeck ? (
           <div id="loading-deck-state" className="flex flex-col items-center space-y-4 text-[#2D3436]">
             <div className="w-12 h-12 border-4 border-[#F0F0F0] border-t-[#4ECDC4] rounded-full animate-spin"></div>
@@ -272,7 +272,7 @@ export default function App() {
             <p className="font-bold">No photos found in the folder.</p>
           </div>
         ) : (
-          <div id="deck-view" className="w-full h-full flex flex-col items-center justify-center min-h-0 py-2 max-h-[800px]">
+          <div id="deck-view" className="w-full h-full flex flex-col items-center justify-center min-h-0">
             <AnimatePresence mode="popLayout">
               <motion.div
                 key={currentPhoto.id}
@@ -280,21 +280,22 @@ export default function App() {
                 animate={{ opacity: 1, scale: 1, x: 0 }}
                 exit={{ opacity: 0, scale: 0.9, x: -50 }}
                 transition={{ duration: 0.3, ease: 'easeOut' }}
-                className="flex-1 w-full min-h-0 min-w-0 flex justify-center mb-4"
+                className="flex-1 min-h-0 w-full flex items-center justify-center mb-3"
               >
-                <Flashcard 
-                  name={currentPhoto.name} 
-                  photoUrl={currentBlobUrl} 
-                  isLoading={isLoadingPhoto} 
+                <Flashcard
+                  name={currentPhoto.name}
+                  photoUrl={currentBlobUrl}
+                  isLoading={isLoadingPhoto}
                   stats={deckStats[currentPhoto.id] || { correct: 0, incorrect: 0, mastered: false }}
                   onResult={handleResult}
+                  onNext={handleNextStudent}
                 />
               </motion.div>
             </AnimatePresence>
 
-            <button 
+            <button
               onClick={handleNextStudent}
-              className="mt-2 flex-shrink-0 mx-auto bg-white border-4 border-[#2D3436] shadow-[6px_6px_0px_#2D3436] active:shadow-none active:translate-x-1.5 active:translate-y-1.5 hover:bg-[#F7F7F7] px-8 py-3 rounded-2xl text-sm font-black uppercase tracking-wider transition-all"
+              className="flex-shrink-0 mx-auto bg-white border-4 border-[#2D3436] shadow-[6px_6px_0px_#2D3436] active:shadow-none active:translate-x-1.5 active:translate-y-1.5 hover:bg-[#F7F7F7] px-8 py-3 rounded-2xl text-sm font-black uppercase tracking-wider transition-all"
             >
               Next Student
             </button>
@@ -304,7 +305,7 @@ export default function App() {
 
       {/* Footer Navigation */}
       {photos.length > 0 && !isLoadingDeck && !error && (
-        <footer className="fixed bottom-0 left-0 right-0 h-24 bg-white border-t-4 border-[#2D3436] z-10 px-4 sm:px-6 flex items-center justify-between gap-2 sm:gap-4 pb-safe">
+        <footer className="flex-shrink-0 h-24 bg-white border-t-4 border-[#2D3436] z-10 px-4 sm:px-6 flex items-center justify-between gap-2 sm:gap-4 pb-safe relative">
           <button disabled className="flex-1 h-12 rounded-xl border-4 border-[#2D3436] font-black uppercase text-[10px] sm:text-xs tracking-wider bg-[#FFE66D] text-[#2D3436] opacity-50 cursor-not-allowed">
             Grade 9
           </button>
