@@ -221,7 +221,7 @@ export default function App() {
   }
 
   return (
-    <div className="h-screen bg-[#FFF9F0] relative overflow-hidden flex flex-col font-sans text-[#2D3436] pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
+    <div className="h-screen bg-[#FFF9F0] relative overflow-hidden flex flex-col font-sans text-[#2D3436] pt-[calc(env(safe-area-inset-top)+16px)] pb-[calc(env(safe-area-inset-bottom)+16px)]">
       {/* Abstract Backgrounds */}
       <div className="absolute top-[-50px] left-[-50px] w-80 h-80 bg-[#FFE66D] rounded-full opacity-40 blur-3xl pointer-events-none"></div>
       <div className="absolute bottom-[-100px] right-[-100px] w-96 h-96 bg-[#4ECDC4] rounded-full opacity-20 blur-3xl pointer-events-none"></div>
