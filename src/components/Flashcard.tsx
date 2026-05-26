@@ -13,10 +13,13 @@ interface FlashcardProps {
   photoUrl: string | null;
   isLoading: boolean;
   stats: StudentStats;
+  activeCount: number;
+  masteredCount: number;
   onResult: (type: 'correct' | 'incorrect' | 'mastered') => void;
+  onNext: () => void;
 }
 
-export default function Flashcard({ name, photoUrl, isLoading, stats, onResult }: FlashcardProps) {
+export default function Flashcard({ name, photoUrl, isLoading, stats, activeCount, masteredCount, onResult, onNext }: FlashcardProps) {
   const [isFlipped, setIsFlipped] = useState(false);
 
   // Auto flip to front when a new student is shown
@@ -31,13 +34,15 @@ export default function Flashcard({ name, photoUrl, isLoading, stats, onResult }
   const handleAction = (e: React.MouseEvent, type: 'correct' | 'incorrect' | 'mastered') => {
     e.stopPropagation();
     onResult(type);
-    
-    // Slight delay before potentially flipping back or moving next, 
-    // though the parent state change might handle navigation.
+    // 'mastered' auto-advances because the card is filtered out of activeDeck;
+    // correct/incorrect need an explicit advance to mirror that behaviour.
+    if (type === 'correct' || type === 'incorrect') {
+      onNext();
+    }
   };
 
   return (
-    <div className="relative w-full h-full max-w-[320px] max-h-[480px] sm:max-w-[360px] sm:max-h-[520px] aspect-[3/4] sm:aspect-[3/5] mx-auto cursor-pointer group" onClick={handleFlip} style={{ perspective: '1000px' }}>
+    <div className="relative h-full max-w-full mx-auto cursor-pointer group" onClick={handleFlip} style={{ perspective: '1000px', aspectRatio: '3 / 4' }}>
       <motion.div
         className="w-full h-full relative"
         initial={false}
@@ -46,10 +51,18 @@ export default function Flashcard({ name, photoUrl, isLoading, stats, onResult }
         style={{ transformStyle: 'preserve-3d' }}
       >
         {/* Front of Card: Photo */}
-        <div 
+        <div
           className="absolute w-full h-full backface-hidden bg-white border-4 border-[#2D3436] rounded-[32px] shadow-[12px_12px_0px_#4ECDC4] flex flex-col p-4 transition-transform group-hover:scale-[1.02] group-active:scale-[0.98]"
           style={{ backfaceVisibility: 'hidden' }}
         >
+          {/* Progress counters: remaining (orange) vs mastered (green) */}
+          <div className="absolute top-3 left-3 z-20 w-10 h-10 rounded-full bg-[#FF8C42] border-2 border-[#2D3436] flex items-center justify-center text-white font-black text-base leading-none shadow-[2px_2px_0px_#2D3436] pointer-events-none">
+            {activeCount}
+          </div>
+          <div className="absolute top-3 right-3 z-20 w-10 h-10 rounded-full bg-[#4ECDC4] border-2 border-[#2D3436] flex items-center justify-center text-white font-black text-base leading-none shadow-[2px_2px_0px_#2D3436] pointer-events-none">
+            {masteredCount}
+          </div>
+
           {isLoading ? (
             <div className="w-full h-full bg-[#FFE66D] border-2 border-[#2D3436] rounded-[24px] flex flex-col items-center justify-center text-[#2D3436] space-y-4">
               <RefreshCw className="w-10 h-10 animate-spin" />
@@ -74,21 +87,21 @@ export default function Flashcard({ name, photoUrl, isLoading, stats, onResult }
           <div className="w-full h-full bg-white border-2 border-[#2D3436] rounded-[24px] flex flex-col items-center justify-between p-6 overflow-hidden">
             
             <div className="flex-1 flex items-center justify-center w-full">
-              <h2 className="text-3xl font-black text-[#2D3436] text-center tracking-tight uppercase leading-snug break-words hyphens-auto">
+              <h2 className="text-3xl font-black text-[#2D3436] text-center tracking-tight leading-snug break-words hyphens-none">
                 {name}
               </h2>
             </div>
 
             <div className="w-full flex justify-center gap-4 mb-4" onClick={(e) => e.stopPropagation()}>
-              <button 
-                onClick={(e) => handleAction(e, 'incorrect')}
-                className="w-14 h-14 rounded-full bg-[#FF6B6B] border-2 border-[#2D3436] flex items-center justify-center text-white shadow-[2px_2px_0px_#2D3436] active:translate-y-1 active:translate-x-1 active:shadow-none transition-all"
-                title="Got it wrong"
+              <button
+                onClick={(e) => handleAction(e, 'correct')}
+                className="w-14 h-14 rounded-full bg-[#A8E6CF] border-2 border-[#2D3436] flex items-center justify-center text-[#2D3436] shadow-[2px_2px_0px_#2D3436] active:translate-y-1 active:translate-x-1 active:shadow-none transition-all"
+                title="Got it right"
               >
-                <X className="w-8 h-8" strokeWidth={3} />
+                <Check className="w-8 h-8" strokeWidth={3} />
               </button>
-              
-              <button 
+
+              <button
                 onClick={(e) => handleAction(e, 'mastered')}
                 className="w-14 h-14 rounded-full bg-[#4ECDC4] border-2 border-[#2D3436] flex items-center justify-center text-[#2D3436] shadow-[2px_2px_0px_#2D3436] active:translate-y-1 active:translate-x-1 active:shadow-none transition-all"
                 title="Don't show again"
@@ -96,12 +109,12 @@ export default function Flashcard({ name, photoUrl, isLoading, stats, onResult }
                 <Smile className="w-8 h-8" strokeWidth={3} />
               </button>
 
-              <button 
-                onClick={(e) => handleAction(e, 'correct')}
-                className="w-14 h-14 rounded-full bg-[#A8E6CF] border-2 border-[#2D3436] flex items-center justify-center text-[#2D3436] shadow-[2px_2px_0px_#2D3436] active:translate-y-1 active:translate-x-1 active:shadow-none transition-all"
-                title="Got it right"
+              <button
+                onClick={(e) => handleAction(e, 'incorrect')}
+                className="w-14 h-14 rounded-full bg-[#FF6B6B] border-2 border-[#2D3436] flex items-center justify-center text-white shadow-[2px_2px_0px_#2D3436] active:translate-y-1 active:translate-x-1 active:shadow-none transition-all"
+                title="Got it wrong"
               >
-                <Check className="w-8 h-8" strokeWidth={3} />
+                <X className="w-8 h-8" strokeWidth={3} />
               </button>
             </div>
 

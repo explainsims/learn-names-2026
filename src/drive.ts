@@ -6,6 +6,12 @@ export interface StudentPhoto {
   url: string | null;
 }
 
+// Word boundaries: start of string, whitespace, hyphen, opening paren.
+// "mary-anne", "JOHN", and "alice (al) smith" all become
+// "Mary-Anne", "John", and "Alice (Al) Smith".
+const toTitleCase = (s: string): string =>
+  s.toLowerCase().replace(/(^|[\s\-(])([a-z])/g, (_, sep, ch) => sep + ch.toUpperCase());
+
 export const fetchStudentPhotos = async (folderId: string): Promise<StudentPhoto[]> => {
   const token = await getAccessToken();
   if (!token) throw new Error('No access token available');
@@ -42,7 +48,7 @@ export const fetchStudentPhotos = async (folderId: string): Promise<StudentPhoto
 
     return {
       id: f.id,
-      name: f.name.replace(/\.[^/.]+$/, ""),
+      name: toTitleCase(f.name.replace(/\.[^/.]+$/, "")),
       url: photoUrl, // We will use this directly!
     };
   });
