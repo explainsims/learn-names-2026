@@ -33,7 +33,6 @@ export default function App() {
   const [currentBlobUrl, setCurrentBlobUrl] = useState<string | null>(null);
   const [isLoadingPhoto, setIsLoadingPhoto] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
-  const [selectedGrade, setSelectedGrade] = useState('g12');
 
   const resetSkipped = () => {
     const updated = Object.fromEntries(
@@ -41,6 +40,12 @@ export default function App() {
     );
     setDeckStats(updated);
     localStorage.setItem('student_stats', JSON.stringify(updated));
+  };
+
+  const handleResetGrade = (gradeId: string) => {
+    // Only Grade 12 is wired up to a real deck for now; other grades
+    // are present in the UI but disabled.
+    if (gradeId === 'g12') resetSkipped();
   };
 
   const activeDeck = useMemo(() => {
@@ -253,9 +258,9 @@ export default function App() {
       <main id="app-main" className="flex-1 min-h-0 flex flex-col items-center justify-center py-3 px-4 w-full max-w-lg mx-auto z-10 relative">
         {showSettings ? (
           <SettingsPanel
-            selectedGradeId={selectedGrade}
-            onSelectGrade={setSelectedGrade}
-            onResetSkipped={resetSkipped}
+            activeCount={activeDeck.length}
+            masteredCount={photos.length - activeDeck.length}
+            onResetGrade={handleResetGrade}
           />
         ) : isLoadingDeck ? (
           <div id="loading-deck-state" className="flex flex-col items-center space-y-4 text-[#2D3436]">
