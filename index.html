@@ -74,8 +74,22 @@
       if ('serviceWorker' in navigator && !isLocal) {
         window.addEventListener('load', function () {
           var base = window.__APP_BASE || '/';
-          navigator.serviceWorker.register(base + 'sw.js', { scope: base }).catch(function (err) {
-            console.warn('Service worker registration failed:', err);
+          // Cleanup: an earlier build registered the SW at the root
+          // scope. Behind the explainsims.com worker that meant the
+          // browser kept polling /sw.js -- which the worker now
+          // 526s because it treats "sw.js" as a Cloud Run service
+          // name. Unregister any SW whose scope isn't this app's
+          // base before we register the new one.
+          navigator.serviceWorker.getRegistrations().then(function (regs) {
+            regs.forEach(function (reg) {
+              var scopePath = new URL(reg.scope).pathname;
+              if (scopePath !== base) {
+                reg.unregister();
+              }
+            });
+            navigator.serviceWorker.register(base + 'sw.js', { scope: base }).catch(function (err) {
+              console.warn('Service worker registration failed:', err);
+            });
           });
         });
       }
