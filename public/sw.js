@@ -2,11 +2,10 @@
 // give the app shell a fast/offline boot. Drive API calls and photo
 // fetches are never cached — those always need a live network.
 
-const SHELL_CACHE = 'shell-v1';
+const SHELL_CACHE = 'shell-v2';
 const SHELL_ASSETS = [
   './',
   './index.html',
-  './manifest.webmanifest',
   './icon-192.png',
   './icon-512.png',
   './apple-touch-icon.png',
