@@ -12,15 +12,19 @@ export interface StudentPhoto {
 const toTitleCase = (s: string): string =>
   s.toLowerCase().replace(/(^|[\s\-(])([a-z])/g, (_, sep, ch) => sep + ch.toUpperCase());
 
-// School filenames are "SURNAME, given names" — keep the surname as
+// School filenames are "SURNAME, given names" -- keep the surname as
 // uppercase (it can contain spaces, hyphens, or apostrophes) and
 // title-case everything after the first comma. Filenames with no
-// comma fall back to plain title case.
+// comma fall back to plain title case. Anything after a closing
+// parenthesis is dropped, so "SMITH, John (Johnny) Robert" renders
+// as "SMITH, John (Johnny)".
 const formatName = (s: string): string => {
-  const commaIdx = s.indexOf(',');
-  if (commaIdx === -1) return toTitleCase(s);
-  const surname = s.slice(0, commaIdx).trim().toUpperCase();
-  const rest = s.slice(commaIdx + 1).trim();
+  const parenIdx = s.indexOf(')');
+  const truncated = parenIdx === -1 ? s : s.slice(0, parenIdx + 1);
+  const commaIdx = truncated.indexOf(',');
+  if (commaIdx === -1) return toTitleCase(truncated);
+  const surname = truncated.slice(0, commaIdx).trim().toUpperCase();
+  const rest = truncated.slice(commaIdx + 1).trim();
   if (!rest) return surname;
   return `${surname}, ${toTitleCase(rest)}`;
 };
