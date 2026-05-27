@@ -1,19 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Check, X, Smile } from 'lucide-react';
-
-interface Grade {
-  id: string;
-  label: string;
-  color: string;
-  active: boolean;
-}
-
-const GRADES: Grade[] = [
-  { id: 'g9',  label: 'Grade 9',  color: '#FFE66D', active: false },
-  { id: 'g10', label: 'Grade 10', color: '#4ECDC4', active: false },
-  { id: 'g11', label: 'Grade 11', color: '#FF6B6B', active: false },
-  { id: 'g12', label: 'Grade 12', color: '#A8E6CF', active: true  },
-];
+import { GRADES, Grade } from '../grades';
 
 interface SettingsPanelProps {
   activeCount: number;
@@ -30,7 +17,6 @@ export default function SettingsPanel({ activeCount, masteredCount, onResetGrade
   }, []);
 
   const handleReset = (grade: Grade) => {
-    if (!grade.active) return;
     onResetGrade(grade.id);
     setResetMessage(`${grade.label} reset!`);
     if (timerRef.current) clearTimeout(timerRef.current);
@@ -78,15 +64,9 @@ export default function SettingsPanel({ activeCount, masteredCount, onResetGrade
         {GRADES.map((grade) => (
           <button
             key={grade.id}
-            disabled={!grade.active}
             onClick={() => handleReset(grade)}
             style={{ backgroundColor: grade.color }}
-            className={[
-              'h-14 rounded-xl border-4 border-[#2D3436] font-black uppercase text-xs tracking-wider text-[#2D3436] transition-all',
-              grade.active
-                ? 'cursor-pointer hover:brightness-95 active:brightness-90'
-                : 'opacity-50 cursor-not-allowed',
-            ].join(' ')}
+            className="h-14 rounded-xl border-4 border-[#2D3436] font-black uppercase text-xs tracking-wider text-[#2D3436] transition-all cursor-pointer hover:brightness-95 active:brightness-90"
           >
             {grade.label}
           </button>

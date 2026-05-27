@@ -2,18 +2,44 @@ import { useEffect, useState, useMemo } from 'react';
 import { User } from 'firebase/auth';
 import { initAuth, googleSignIn, logout } from './auth';
 import { fetchStudentPhotos, fetchImageBlobUrl, StudentPhoto } from './drive';
+import { GRADES, GRADES_BY_ID } from './grades';
 import Flashcard from './components/Flashcard';
 import SettingsPanel from './components/SettingsPanel';
+import IntroScreen from './components/IntroScreen';
 import { LogOut, UserSquare, Sparkles, Settings } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-
-const FOLDER_ID = '1Xa7yM7aKS3ql9oUt6RVAFypO-q9LmhAn';
 
 interface StudentStats {
   correct: number;
   incorrect: number;
   mastered: boolean;
 }
+
+type DeckStats = Record<string, StudentStats>;
+type AllStats = Record<string, DeckStats>;
+
+const STORAGE_KEY = 'student_stats_v2';
+const LEGACY_STORAGE_KEY = 'student_stats';
+
+const loadInitialStats = (): AllStats => {
+  const saved = localStorage.getItem(STORAGE_KEY);
+  if (saved) {
+    try { return JSON.parse(saved); } catch { /* fall through */ }
+  }
+  // Pre-multi-grade users had a single flat map; assume those stats
+  // belonged to Grade 12 (the only deck we shipped at the time) and
+  // migrate them so they don't have to start over.
+  const legacy = localStorage.getItem(LEGACY_STORAGE_KEY);
+  if (legacy) {
+    try {
+      const migrated: AllStats = { g12: JSON.parse(legacy) };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(migrated));
+      localStorage.removeItem(LEGACY_STORAGE_KEY);
+      return migrated;
+    } catch { /* fall through */ }
+  }
+  return {};
+};
 
 export default function App() {
   const [needsAuth, setNeedsAuth] = useState(false);
@@ -24,28 +50,27 @@ export default function App() {
   const [isLoadingDeck, setIsLoadingDeck] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const [deckStats, setDeckStats] = useState<Record<string, StudentStats>>(() => {
-    const saved = localStorage.getItem('student_stats');
-    return saved ? JSON.parse(saved) : {};
-  });
+  const [allStats, setAllStats] = useState<AllStats>(loadInitialStats);
+  const [selectedGradeId, setSelectedGradeId] = useState<string | null>(null);
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [currentBlobUrl, setCurrentBlobUrl] = useState<string | null>(null);
   const [isLoadingPhoto, setIsLoadingPhoto] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
 
-  const resetSkipped = () => {
-    const updated = Object.fromEntries(
-      Object.entries(deckStats).map(([id, s]) => [id, { ...s, mastered: false }])
-    );
-    setDeckStats(updated);
-    localStorage.setItem('student_stats', JSON.stringify(updated));
+  const deckStats = selectedGradeId ? allStats[selectedGradeId] ?? {} : {};
+
+  const persistStats = (next: AllStats) => {
+    setAllStats(next);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
   };
 
   const handleResetGrade = (gradeId: string) => {
-    // Only Grade 12 is wired up to a real deck for now; other grades
-    // are present in the UI but disabled.
-    if (gradeId === 'g12') resetSkipped();
+    const current = allStats[gradeId] ?? {};
+    const cleared = Object.fromEntries(
+      Object.entries(current).map(([id, s]) => [id, { ...s, mastered: false }])
+    );
+    persistStats({ ...allStats, [gradeId]: cleared });
   };
 
   const activeDeck = useMemo(() => {
@@ -58,14 +83,14 @@ export default function App() {
   // Authentication State
   useEffect(() => {
     const unsubscribe = initAuth(
-      (user, token) => {
+      (user) => {
         setUser(user);
         setNeedsAuth(false);
-        loadDeck();
       },
       () => {
         setUser(null);
         setNeedsAuth(true);
+        setSelectedGradeId(null);
         setPhotos([]);
       }
     );
@@ -80,7 +105,6 @@ export default function App() {
       if (result) {
         setUser(result.user);
         setNeedsAuth(false);
-        loadDeck();
       }
     } catch (err: any) {
       setError(err.message || 'Login failed.');
@@ -93,14 +117,15 @@ export default function App() {
     await logout();
     setUser(null);
     setNeedsAuth(true);
+    setSelectedGradeId(null);
     setPhotos([]);
   };
 
-  const loadDeck = async () => {
+  const loadDeck = async (folderId: string) => {
     setIsLoadingDeck(true);
     setError(null);
     try {
-      const list = await fetchStudentPhotos(FOLDER_ID);
+      const list = await fetchStudentPhotos(folderId);
       const shuffled = [...list].sort(() => Math.random() - 0.5);
       setPhotos(shuffled);
       setCurrentIndex(0);
@@ -111,18 +136,27 @@ export default function App() {
     }
   };
 
+  const handleSelectGrade = (gradeId: string) => {
+    setShowSettings(false);
+    if (gradeId === selectedGradeId) return;
+    const grade = GRADES_BY_ID[gradeId];
+    if (!grade) return;
+    setSelectedGradeId(gradeId);
+    loadDeck(grade.folderId);
+  };
+
   const handleResult = (type: 'correct' | 'incorrect' | 'mastered') => {
-    if (!currentPhoto) return;
-    setDeckStats(prev => {
-      const current = prev[currentPhoto.id] || { correct: 0, incorrect: 0, mastered: false };
-      const nextStats = { ...current };
-      if (type === 'correct') nextStats.correct += 1;
-      if (type === 'incorrect') nextStats.incorrect += 1;
-      if (type === 'mastered') nextStats.mastered = true;
-      
-      const newState = { ...prev, [currentPhoto.id]: nextStats };
-      localStorage.setItem('student_stats', JSON.stringify(newState));
-      return newState;
+    if (!currentPhoto || !selectedGradeId) return;
+    const gradeStats = allStats[selectedGradeId] ?? {};
+    const photoStats = gradeStats[currentPhoto.id] ?? { correct: 0, incorrect: 0, mastered: false };
+    const nextPhotoStats = { ...photoStats };
+    if (type === 'correct') nextPhotoStats.correct += 1;
+    if (type === 'incorrect') nextPhotoStats.incorrect += 1;
+    if (type === 'mastered') nextPhotoStats.mastered = true;
+
+    persistStats({
+      ...allStats,
+      [selectedGradeId]: { ...gradeStats, [currentPhoto.id]: nextPhotoStats },
     });
   };
 
@@ -262,6 +296,8 @@ export default function App() {
             masteredCount={photos.length - activeDeck.length}
             onResetGrade={handleResetGrade}
           />
+        ) : !selectedGradeId ? (
+          <IntroScreen />
         ) : isLoadingDeck ? (
           <div id="loading-deck-state" className="flex flex-col items-center space-y-4 text-[#2D3436]">
             <div className="w-12 h-12 border-4 border-[#F0F0F0] border-t-[#4ECDC4] rounded-full animate-spin"></div>
@@ -275,7 +311,14 @@ export default function App() {
               </svg>
             </div>
             <p className="text-[#2D3436] font-bold mb-6 text-lg">{error}</p>
-            <button id="btn-retry-deck" onClick={loadDeck} className="bg-[#FF6B6B] text-white border-2 border-[#2D3436] shadow-[4px_4px_0px_#2D3436] active:shadow-none active:translate-x-1 active:translate-y-1 px-8 py-3 rounded-2xl text-sm font-black uppercase transition-all">
+            <button
+              id="btn-retry-deck"
+              onClick={() => {
+                const grade = GRADES_BY_ID[selectedGradeId];
+                if (grade) loadDeck(grade.folderId);
+              }}
+              className="bg-[#FF6B6B] text-white border-2 border-[#2D3436] shadow-[4px_4px_0px_#2D3436] active:shadow-none active:translate-x-1 active:translate-y-1 px-8 py-3 rounded-2xl text-sm font-black uppercase transition-all"
+            >
               Try Again
             </button>
           </div>
@@ -285,12 +328,9 @@ export default function App() {
                 <Sparkles className="w-10 h-10" />
             </div>
             <h2 className="text-2xl font-black uppercase italic mb-2">All Mastered!</h2>
-            <p className="font-bold opacity-80 text-sm">You have mastered all {photos.length} students in this folder.</p>
-            <button 
-              onClick={() => {
-                setDeckStats({});
-                localStorage.removeItem('student_stats');
-              }}
+            <p className="font-bold opacity-80 text-sm">You have mastered all {photos.length} students in {GRADES_BY_ID[selectedGradeId]?.label ?? 'this grade'}.</p>
+            <button
+              onClick={() => handleResetGrade(selectedGradeId)}
               className="mt-8 bg-white border-2 border-[#2D3436] shadow-[4px_4px_0px_#2D3436] active:shadow-none active:translate-x-1 active:translate-y-1 px-6 py-3 rounded-2xl text-sm font-black uppercase transition-all"
             >
               Reset Progress
@@ -301,7 +341,8 @@ export default function App() {
             <div className="w-16 h-16 bg-[#F7F7F7] border-2 border-[#2D3436] text-[#2D3436] rounded-full flex items-center justify-center mx-auto mb-4 opacity-50">
                 <UserSquare className="w-8 h-8" />
             </div>
-            <p className="font-bold">No photos found in the folder.</p>
+            <p className="font-bold mb-2">No photos in {GRADES_BY_ID[selectedGradeId]?.label ?? 'this grade'} yet.</p>
+            <p className="font-medium text-sm opacity-70">Pick a different grade from the footer to keep learning.</p>
           </div>
         ) : (
           <div id="deck-view" className="w-full h-full flex flex-col items-center justify-center min-h-0">
@@ -331,22 +372,24 @@ export default function App() {
       </main>
 
       {/* Footer Navigation */}
-      {photos.length > 0 && !isLoadingDeck && !error && (
-        <footer className="flex-shrink-0 h-24 bg-white border-t-4 border-[#2D3436] z-10 px-4 sm:px-6 flex items-center justify-between gap-2 sm:gap-4 pb-safe relative">
-          <button disabled className="flex-1 h-12 rounded-xl border-4 border-[#2D3436] font-black uppercase text-[10px] sm:text-xs tracking-wider bg-[#FFE66D] text-[#2D3436] opacity-50 cursor-not-allowed">
-            Grade 9
-          </button>
-          <button disabled className="flex-1 h-12 rounded-xl border-4 border-[#2D3436] font-black uppercase text-[10px] sm:text-xs tracking-wider bg-[#4ECDC4] text-[#2D3436] opacity-50 cursor-not-allowed">
-            Grade 10
-          </button>
-          <button disabled className="flex-1 h-12 rounded-xl border-4 border-[#2D3436] font-black uppercase text-[10px] sm:text-xs tracking-wider bg-[#FF6B6B] text-[#2D3436] opacity-50 cursor-not-allowed">
-            Grade 11
-          </button>
-          <button className="flex-1 h-12 rounded-xl border-4 border-[#2D3436] font-black uppercase text-[10px] sm:text-xs tracking-wider bg-[#A8E6CF] text-[#2D3436] cursor-default">
-            Grade 12
-          </button>
-        </footer>
-      )}
+      <footer className="flex-shrink-0 h-24 bg-white border-t-4 border-[#2D3436] z-10 px-4 sm:px-6 flex items-center justify-between gap-2 sm:gap-4 relative">
+        {GRADES.map((grade) => {
+          const isSelected = grade.id === selectedGradeId;
+          return (
+            <button
+              key={grade.id}
+              onClick={() => handleSelectGrade(grade.id)}
+              style={{ backgroundColor: grade.color }}
+              className={[
+                'flex-1 h-12 rounded-xl border-4 border-[#2D3436] font-black uppercase text-[10px] sm:text-xs tracking-wider text-[#2D3436] transition-all',
+                isSelected ? '' : 'opacity-60 hover:opacity-80 active:opacity-100',
+              ].join(' ')}
+            >
+              {grade.label}
+            </button>
+          );
+        })}
+      </footer>
     </div>
   );
 }
